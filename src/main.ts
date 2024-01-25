@@ -194,5 +194,6 @@ function parse(text: string) {
     }
     if (aiM.length === 0) return;
     console.log(aiM);
+    if (!aiConfig.type) aiConfig.type = "chatgpt";
     return { ai: aiM, option: { index: index + 1, askMark, aiAnswer, config: aiConfig } };
 }
