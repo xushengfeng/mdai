@@ -47,11 +47,10 @@ function ai(m: aim, config: aiconfig) {
         },
         config: {
             model: "gpt-3.5-turbo",
-            messages: m,
         },
     };
     let gemini = {
-        url: config.url || "",
+        url: config.url || "https://generativelanguage.googleapis.com/v1beta/models/gemini-pro:generateContent",
         headers: { "content-type": "application/json" },
         config: {},
     };
@@ -65,12 +64,23 @@ function ai(m: aim, config: aiconfig) {
         for (let i in config.option) {
             con[i] = config.option[i];
         }
+        con["messages"] = m;
     }
     if (config.type === "gemini") {
-        url = gemini.url;
+        let newurl = new URL(gemini.url);
+        if (config.key) newurl.searchParams.set("key", config.key);
+        url = newurl.toString();
         for (let i in config.option) {
             con[i] = config.option[i];
         }
+        let geminiPrompt: { parts: [{ text: string }]; role: "user" | "model" }[] = [];
+        for (let i of m) {
+            let role: (typeof geminiPrompt)[0]["role"];
+            if (i.role === "system" || i.role === "user") role = "user";
+            else role = "model";
+            geminiPrompt.push({ parts: [{ text: i.content }], role });
+        }
+        con["contents"] = geminiPrompt;
     }
 
     let abort = new AbortController();
@@ -92,7 +102,7 @@ function ai(m: aim, config: aiconfig) {
                         console.log(answer);
                         re(answer);
                     } else {
-                        let answer = t.choices[0].message.content;
+                        let answer = t.candidates[0].content.parts[0].text;
                         console.log(answer);
                         re(answer);
                     }
