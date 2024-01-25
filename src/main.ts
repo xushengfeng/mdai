@@ -160,8 +160,9 @@ function parse(text: string) {
                 }
             }
         }
+        index += i.length;
     }
     if (aiM.length === 0) return;
     console.log(aiM);
-    return { ai: aiM, option: { index: index, askMark, aiAnswer, config: aiConfig } };
+    return { ai: aiM, option: { index: index + 1, askMark, aiAnswer, config: aiConfig } };
 }
