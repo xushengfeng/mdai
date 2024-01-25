@@ -3,7 +3,12 @@ import { homedir } from "os";
 import path from "path";
 import YAML from "yaml";
 
-let configPath = path.join(homedir(), process.platform === "win32" ? "AppData" : ".config", "mdai", "config.json");
+let configPath = path.join(
+    homedir(),
+    process.platform === "win32" ? "AppData/Roaming" : ".config",
+    "mdai",
+    "config.json"
+);
 if (existsSync(configPath)) {
     var _config = JSON.parse(readFileSync(configPath).toString());
 }
