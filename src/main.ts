@@ -21,8 +21,9 @@ watchFile(fileName, async () => {
     let text = readFileSync(fileName).toString();
     let p = parse(text);
     if (!p) return;
-    let aix = ai(p.ai, p.option.config);
     canWatch = false;
+    setText("?...");
+    let aix = ai(p.ai, p.option.config);
     let answer = "";
     try {
         answer = await aix.text;
@@ -31,8 +32,11 @@ watchFile(fileName, async () => {
         answer = error.toString();
     }
     answer = answer.replace(/(.|\n)*/, p.option.aiAnswer);
-    let out = text.slice(0, p.option.index) + answer + text.slice(p.option.index + p.option.askMark.length);
-    writeFileSync(fileName, out);
+    setText(answer);
+    function setText(answer: string) {
+        let out = text.slice(0, p.option.index) + answer + text.slice(p.option.index + p.option.askMark.length);
+        writeFileSync(fileName, out);
+    }
     canWatch = true;
 });
 
