@@ -186,9 +186,9 @@ function parse(text: string) {
     for (let n = dataStart; n < ps.length; n++) {
         const i = ps[n].text;
         if (i.startsWith(aiMark)) {
-            aiM.push({ role: "assistant", content: i.replace(aiMark, "").trim() });
+            aiM.push({ role: "assistant", content: i.replace(aiMark, "") });
         } else if (i.startsWith(userMark)) {
-            aiM.push({ role: "user", content: i.replace(userMark, "").trim() });
+            aiM.push({ role: "user", content: i.replace(userMark, "") });
         } else if (i === askMark) {
             askIndex = ps[n].index;
             break;
@@ -205,6 +205,8 @@ function parse(text: string) {
             }
         }
     }
+    aiM.forEach((i) => i.content.trim());
+    aiM = aiM.filter((i) => i.content);
     if (aiM.length === 0) return;
     console.log(aiM);
     if (!aiConfig.type) aiConfig.type = "chatgpt";
