@@ -108,11 +108,9 @@ function ai(m: aim, config: aiconfig) {
                 .then((t) => {
                     if (config.type === "chatgpt") {
                         let answer = t.choices[0].message.content;
-                        console.log(answer);
                         re(answer);
                     } else {
                         let answer = t.candidates[0].content.parts[0].text;
-                        console.log(answer);
                         re(answer);
                     }
                 })
@@ -208,7 +206,6 @@ function parse(text: string) {
     aiM.forEach((i) => i.content.trim());
     aiM = aiM.filter((i) => i.content);
     if (aiM.length === 0) return;
-    console.log(aiM);
     if (!aiConfig.type) aiConfig.type = "chatgpt";
     return { ai: aiM, option: { index: askIndex, askMark, aiAnswer, config: aiConfig } };
 }
