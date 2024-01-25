@@ -36,7 +36,6 @@ function ai(m: aim, config: aiconfig) {
     let chatgpt = {
         url: config.url || `https://api.openai.com/v1/chat/completions`,
         headers: {
-            Authorization: `Bearer ${config.key}`,
             "content-type": "application/json",
         },
         config: {
@@ -55,6 +54,7 @@ function ai(m: aim, config: aiconfig) {
     if (config.type === "chatgpt") {
         url = chatgpt.url;
         headers = chatgpt.headers;
+        if (config.key) headers["Authorization"] = `Bearer ${config.key}`;
         for (let i in config.option) {
             con[i] = config.option[i];
         }
