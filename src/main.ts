@@ -12,8 +12,8 @@ let configPath = path.join(
 if (existsSync(configPath)) {
     var _config = JSON.parse(readFileSync(configPath).toString());
 }
-
-const fileName = path.join(process.cwd(), process.argv[2]);
+let fileName = process.argv[2];
+if (!path.isAbsolute(fileName)) fileName = path.join(process.cwd(), process.argv[2]);
 let canWatch = true;
 if (!existsSync(fileName)) {
     writeFileSync(fileName, "");
