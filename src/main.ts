@@ -23,10 +23,17 @@ watchFile(fileName, async () => {
     if (!p) return;
     let aix = ai(p.ai, p.option.config);
     canWatch = false;
-    let answer = await aix.text;
-    answer = answer.replace(/^.*$/, p.option.aiAnswer);
+    let answer = "";
+    try {
+        let answer = await aix.text;
+        answer = answer.replace(/^.*$/, p.option.aiAnswer);
+    } catch (error) {
+        console.error(error);
+        answer = error;
+    }
     let out = text.slice(0, p.option.index) + answer + text.slice(p.option.index + p.option.askMark.length);
     writeFileSync(fileName, out);
+    canWatch = true;
 });
 
 type aim = { role: "system" | "user" | "assistant"; content: string }[];
