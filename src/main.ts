@@ -1,6 +1,12 @@
 import { watchFile, readFileSync, writeFileSync, existsSync } from "fs";
+import { homedir } from "os";
 import path from "path";
 import YAML from "yaml";
+
+let configPath = path.join(homedir(), "mdai", "config.json");
+if (existsSync(configPath)) {
+    var _config = JSON.parse(readFileSync(configPath).toString());
+}
 
 const fileName = path.join(process.cwd(), process.argv[2]);
 let canWatch = true;
@@ -108,7 +114,7 @@ function parse(text: string) {
     let isOp = false;
     let op: string[] = [];
     let aiM: aim = [];
-    let aiConfig: aiconfig = { type: "chatgpt" };
+    let aiConfig: aiconfig = _config || { type: "chatgpt" };
     l.push(newMark);
     for (let i of l) {
         if (i === opMark) {
