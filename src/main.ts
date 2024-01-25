@@ -123,43 +123,56 @@ function parse(text: string) {
     let aiM: aim = [];
     let aiConfig: aiconfig = _config || { type: "chatgpt" };
     l.push(newMark);
-    for (let i of l) {
+    let dataStart = 0;
+    for (let n = 0; n < l.length; n++) {
+        const i = l[n];
         if (i === opMark) {
-            isOp = !isOp;
-            if (!isOp) {
-                let option = YAML.parse(op.join("\n"));
-                console.log(option);
-                ignoreMark = option["ignore"] || ignoreMark;
-                userMark = option["user"] || userMark;
-                aiMark = option["ai"] || aiMark;
-                askMark = option["ask"] || askMark;
-                aiAnswer = option["answer"] || aiAnswer;
-                aiConfig = Object.assign(aiConfig, option["config"]);
+            if (n === 0) {
+                isOp = true;
+                continue;
+            } else {
+                if (isOp) {
+                    dataStart = n + 1;
+
+                    let option = YAML.parse(op.join("\n"));
+                    console.log(option);
+                    ignoreMark = option["ignore"] || ignoreMark;
+                    userMark = option["user"] || userMark;
+                    aiMark = option["ai"] || aiMark;
+                    askMark = option["ask"] || askMark;
+                    aiAnswer = option["answer"] || aiAnswer;
+                    aiConfig = Object.assign(aiConfig, option["config"]);
+
+                    break;
+                }
             }
         }
         if (isOp) {
             op.push(i);
+        }
+    }
+    for (let n = dataStart; n < l.length; n++) {
+        const i = l[n];
+        if (i.startsWith(aiMark)) {
+            aiM.push({ role: "assistant", content: i.replace(aiMark, "").trim() });
+        } else if (i.startsWith(userMark)) {
+            aiM.push({ role: "user", content: i.replace(userMark, "").trim() });
+        } else if (i === askMark) {
+            break;
+        } else if (i.startsWith(ignoreMark)) {
+            index += i.length + 1;
+            continue;
+        } else if (i === newMark) {
+            // ask 在 new 之前检测，换句话，若到了new无ask，则抛弃
+            aiM = [];
         } else {
-            if (i.startsWith(aiMark)) {
-                aiM.push({ role: "assistant", content: i.replace(aiMark, "").trim() });
-            } else if (i.startsWith(userMark)) {
-                aiM.push({ role: "user", content: i.replace(userMark, "").trim() });
-            } else if (i === askMark) {
-                break;
-            } else if (i.startsWith(ignoreMark)) {
-                index += i.length + 1;
-                continue;
-            } else if (i === newMark) {
-                // ask 在 new 之前检测，换句话，若到了new无ask，则抛弃
-                aiM = [];
+            if (aiM.length) {
+                aiM.at(-1).content += "\n" + i;
             } else {
-                if (aiM.length) {
-                    aiM.at(-1).content += "\n" + i;
-                } else {
-                    aiM.push({ role: "system", content: i });
-                }
+                aiM.push({ role: "system", content: i });
             }
         }
+
         index += i.length;
     }
     if (aiM.length === 0) return;
