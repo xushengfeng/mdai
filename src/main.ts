@@ -137,6 +137,11 @@ function parse(text: string) {
     let aiM: aim = [];
     let aiConfig: aiconfig = _config || { type: "chatgpt" };
     l.push(newMark);
+    let ps: { text: string; index: number }[] = l.map((i) => {
+        let oi = index;
+        index += i.length + 1;
+        return { text: i, index: oi };
+    });
     let dataStart = 0;
     for (let n = 0; n < l.length; n++) {
         const i = l[n];
@@ -172,16 +177,17 @@ function parse(text: string) {
     if (!aiAnswer.includes(aiMark)) {
         console.error(`ai(${aiMark}) !in answer(${aiAnswer})`);
     }
-    for (let n = dataStart; n < l.length; n++) {
-        const i = l[n];
+    let askIndex = 0;
+    for (let n = dataStart; n < ps.length; n++) {
+        const i = ps[n].text;
         if (i.startsWith(aiMark)) {
             aiM.push({ role: "assistant", content: i.replace(aiMark, "").trim() });
         } else if (i.startsWith(userMark)) {
             aiM.push({ role: "user", content: i.replace(userMark, "").trim() });
         } else if (i === askMark) {
+            askIndex = ps[n].index;
             break;
         } else if (i.startsWith(ignoreMark)) {
-            index += i.length + 1;
             continue;
         } else if (i === newMark) {
             // ask 在 new 之前检测，换句话，若到了new无ask，则抛弃
@@ -193,11 +199,9 @@ function parse(text: string) {
                 aiM.push({ role: "system", content: i });
             }
         }
-
-        index += i.length;
     }
     if (aiM.length === 0) return;
     console.log(aiM);
     if (!aiConfig.type) aiConfig.type = "chatgpt";
-    return { ai: aiM, option: { index: index + 1, askMark, aiAnswer, config: aiConfig } };
+    return { ai: aiM, option: { index: askIndex, askMark, aiAnswer, config: aiConfig } };
 }
