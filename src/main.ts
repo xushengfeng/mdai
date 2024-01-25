@@ -25,12 +25,12 @@ watchFile(fileName, async () => {
     canWatch = false;
     let answer = "";
     try {
-        let answer = await aix.text;
-        answer = answer.replace(/^.*$/, p.option.aiAnswer);
+        answer = await aix.text;
     } catch (error) {
         console.error(error);
-        answer = error;
+        answer = error.toString();
     }
+    answer = answer.replace(/(.|\n)*/, p.option.aiAnswer);
     let out = text.slice(0, p.option.index) + answer + text.slice(p.option.index + p.option.askMark.length);
     writeFileSync(fileName, out);
     canWatch = true;
@@ -114,10 +114,10 @@ function parse(text: string) {
     const opMark = "---";
     const newMark = "---";
     let ignoreMark = "//";
-    let userMark = ">";
-    let aiMark = "ai:";
+    let userMark = ":>";
+    let aiMark = "!>";
     let askMark = "??";
-    let aiAnswer = "ai:\n$0";
+    let aiAnswer = "\n!>\n$&";
     let isOp = false;
     let op: string[] = [];
     let aiM: aim = [];
@@ -150,6 +150,13 @@ function parse(text: string) {
         if (isOp) {
             op.push(i);
         }
+    }
+    if (aiMark.startsWith(userMark) || userMark.startsWith(aiMark)) {
+        console.error(`user(${userMark}) <-> ai(${aiMark})`);
+        return;
+    }
+    if (!aiAnswer.includes(aiMark)) {
+        console.error(`ai(${aiMark}) !in answer(${aiAnswer})`);
     }
     for (let n = dataStart; n < l.length; n++) {
         const i = l[n];
