@@ -24,7 +24,7 @@ console.log(`watching ${fileName}`);
 watchFile(fileName, async () => {
     if (!canWatch) return;
     let text = readFileSync(fileName).toString();
-    let p = parse(text);
+    let p = await parse(text);
     if (!p) return;
     canWatch = false;
     setText("?...");
@@ -45,7 +45,9 @@ watchFile(fileName, async () => {
     canWatch = true;
 });
 
-type aim = { role: "system" | "user" | "assistant"; content: string }[];
+type aim = { role: "system" | "user" | "assistant"; content: { text: string; img?: { src: string; mime: string } } }[];
+type chatgptm = { role: "system" | "user" | "assistant"; content: string }[];
+type geminim = { parts: [{ text: string }]; role: "user" | "model" }[];
 type aiconfig = { type: "chatgpt" | "gemini"; key?: string; url?: string; option?: Object };
 
 function ai(m: aim, config: aiconfig) {
@@ -73,7 +75,11 @@ function ai(m: aim, config: aiconfig) {
         for (let i in config.option) {
             con[i] = config.option[i];
         }
-        con["messages"] = m;
+        let messages: chatgptm = [];
+        for (let i of m) {
+            messages.push({ role: i.role, content: i.content.text });
+        }
+        con["messages"] = messages;
     }
     if (config.type === "gemini") {
         let newurl = new URL(gemini.url);
@@ -82,12 +88,12 @@ function ai(m: aim, config: aiconfig) {
         for (let i in config.option) {
             con[i] = config.option[i];
         }
-        let geminiPrompt: { parts: [{ text: string }]; role: "user" | "model" }[] = [];
+        let geminiPrompt: geminim = [];
         for (let i of m) {
             let role: (typeof geminiPrompt)[0]["role"];
             if (i.role === "system" || i.role === "user") role = "user";
             else role = "model";
-            geminiPrompt.push({ parts: [{ text: i.content }], role });
+            geminiPrompt.push({ parts: [{ text: i.content.text }], role });
         }
         con["contents"] = geminiPrompt;
     }
@@ -125,7 +131,7 @@ function ai(m: aim, config: aiconfig) {
     };
 }
 
-function parse(text: string) {
+async function parse(text: string) {
     let l = text.split("\n");
     let index = 0;
     const opMark = "---";
@@ -184,9 +190,9 @@ function parse(text: string) {
     for (let n = dataStart; n < ps.length; n++) {
         const i = ps[n].text;
         if (i.startsWith(aiMark)) {
-            aiM.push({ role: "assistant", content: i.replace(aiMark, "") });
+            aiM.push({ role: "assistant", content: { text: i.replace(aiMark, "") } });
         } else if (i.startsWith(userMark)) {
-            aiM.push({ role: "user", content: i.replace(userMark, "") });
+            aiM.push({ role: "user", content: { text: i.replace(userMark, "") } });
         } else if (i === askMark) {
             askIndex = ps[n].index;
             break;
@@ -197,15 +203,52 @@ function parse(text: string) {
             aiM = [];
         } else {
             if (aiM.length) {
-                aiM.at(-1).content += "\n" + i;
+                const imageRegex = /!\[.*\]\((.*?)\)/g;
+                const linkRegex = /\[.*\]\((.*?)\)/g;
+                const imageMeach = imageRegex.exec(i);
+                const linkMeach = linkRegex.exec(i);
+                if (imageMeach) {
+                    let img = await parseImageUrl(imageMeach[1]);
+                    aiM.at(-1).content["img"] = img;
+                } else if (linkMeach) {
+                    aiM.at(-1).content.text += await parseUrl(linkMeach[1]);
+                } else {
+                    aiM.at(-1).content.text += "\n" + i;
+                }
             } else {
-                aiM.push({ role: "system", content: i });
+                aiM.push({ role: "system", content: { text: i } });
             }
         }
     }
-    aiM.forEach((i) => i.content.trim());
+    aiM.forEach((i) => i.content.text.trim());
     aiM = aiM.filter((i) => i.content);
     if (aiM.length === 0) return;
     if (!aiConfig.type) aiConfig.type = "chatgpt";
     return { ai: aiM, option: { index: askIndex, askMark, aiAnswer, config: aiConfig } };
 }
+
+function parseImageUrl(url: string) {
+    if (url.startsWith("http://") || url.startsWith("https://")) {
+        return { src: url, mime: "" };
+    } else {
+        let imgpath = url;
+        if (!path.isAbsolute(imgpath)) {
+            imgpath = path.join(fileName, "..", imgpath);
+        }
+    }
+}
+
+function parseUrl(url: string) {
+    return new Promise((re, rj) => {
+        if (url.startsWith("http://") || url.startsWith("https://")) {
+            fetch(url);
+        } else {
+            let filePath = url;
+            if (!path.isAbsolute(filePath)) {
+                filePath = path.join(fileName, "..", filePath);
+            }
+        }
+    });
+}
+// todo pdf docx
+function data2text() {}
