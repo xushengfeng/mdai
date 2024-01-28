@@ -141,6 +141,7 @@ async function parse(text: string) {
     let aiMark = "!>";
     let askMark = "??";
     let aiAnswer = "\n!>\n$&";
+    let shareSys = false;
     let isOp = false;
     let op: string[] = [];
     let aiM: aim = [];
@@ -169,6 +170,7 @@ async function parse(text: string) {
                     aiMark = option["ai"] || aiMark;
                     askMark = option["ask"] || askMark;
                     aiAnswer = option["answer"] || aiAnswer;
+                    shareSys = Boolean(option["shareSys"]);
                     aiConfig = Object.assign(aiConfig, option["config"]);
 
                     break;
@@ -200,7 +202,11 @@ async function parse(text: string) {
             continue;
         } else if (i === newMark) {
             // ask 在 new 之前检测，换句话，若到了new无ask，则抛弃
-            aiM = [];
+            if (shareSys) {
+                aiM = aiM.filter((i) => i.role === "system");
+            } else {
+                aiM = [];
+            }
         } else {
             if (aiM.length) {
                 const imageRegex = /!\[.*\]\((.*?)\)/g;
