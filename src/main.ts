@@ -2,6 +2,11 @@ import { watchFile, readFileSync, writeFileSync, existsSync } from "fs";
 import { homedir } from "os";
 import path from "path";
 import YAML from "yaml";
+import { fileTypeFromFile } from "file-type";
+import { isBinaryFileSync } from "isbinaryfile";
+import * as pdf from "pdf-parse";
+import mammoth from "mammoth";
+import * as xlsx from "xlsx";
 
 let configPath = path.join(
     homedir(),
@@ -46,8 +51,22 @@ watchFile(fileName, async () => {
 });
 
 type aim = { role: "system" | "user" | "assistant"; content: { text: string; img?: { src: string; mime: string } } }[];
-type chatgptm = { role: "system" | "user" | "assistant"; content: string }[];
-type geminim = { parts: [{ text: string }]; role: "user" | "model" }[];
+type chatgptm = {
+    role: "system" | "user" | "assistant";
+    content: string | [{ type: "text"; text: string }, { type: "image_url"; image_url: { url: string } }];
+}[];
+type geminim = {
+    parts: [
+        { text: string },
+        {
+            inline_data: {
+                mime_type: string;
+                data: string;
+            };
+        }?
+    ];
+    role: "user" | "model";
+}[];
 type aiconfig = { type: "chatgpt" | "gemini"; key?: string; url?: string; option?: Object };
 
 function ai(m: aim, config: aiconfig) {
@@ -77,7 +96,13 @@ function ai(m: aim, config: aiconfig) {
         }
         let messages: chatgptm = [];
         for (let i of m) {
-            messages.push({ role: i.role, content: i.content.text });
+            if (i.content.img) {
+                const content: chatgptm[0]["content"] = [
+                    { type: "text", text: i.content.text },
+                    { type: "image_url", image_url: { url: i.content.img.src } },
+                ];
+                messages.push({ role: i.role, content: content });
+            } else messages.push({ role: i.role, content: i.content.text });
         }
         con["messages"] = messages;
     }
@@ -93,7 +118,9 @@ function ai(m: aim, config: aiconfig) {
             let role: (typeof geminiPrompt)[0]["role"];
             if (i.role === "system" || i.role === "user") role = "user";
             else role = "model";
-            geminiPrompt.push({ parts: [{ text: i.content.text }], role });
+            const parts: geminim[0]["parts"] = [{ text: i.content.text }];
+            if (i.content.img) parts.push({ inline_data: { mime_type: i.content.img.mime, data: i.content.img.src } });
+            geminiPrompt.push({ parts: parts, role });
         }
         con["contents"] = geminiPrompt;
     }
@@ -233,7 +260,7 @@ async function parse(text: string) {
     return { ai: aiM, option: { index: askIndex, askMark, aiAnswer, config: aiConfig } };
 }
 
-function parseImageUrl(url: string) {
+async function parseImageUrl(url: string) {
     if (url.startsWith("http://") || url.startsWith("https://")) {
         return { src: url, mime: "" };
     } else {
@@ -241,20 +268,52 @@ function parseImageUrl(url: string) {
         if (!path.isAbsolute(imgpath)) {
             imgpath = path.join(fileName, "..", imgpath);
         }
+        let img = readFileSync(imgpath);
+        let base64 = img.toString("base64");
+        let mime = await fileTypeFromFile(imgpath);
+        return { src: base64, mime: mime.mime };
     }
 }
 
-function parseUrl(url: string) {
-    return new Promise((re, rj) => {
-        if (url.startsWith("http://") || url.startsWith("https://")) {
-            fetch(url);
-        } else {
-            let filePath = url;
-            if (!path.isAbsolute(filePath)) {
-                filePath = path.join(fileName, "..", filePath);
-            }
+async function parseUrl(url: string) {
+    let filePath = "";
+    if (url.startsWith("http://") || url.startsWith("https://")) {
+        fetch(url)
+            .then((v) => v.arrayBuffer())
+            .then((v) => {
+                filePath = path.join(fileName, "..", new Date().getTime().toString());
+                writeFileSync(filePath, Buffer.from(v));
+            });
+    } else {
+        filePath = url;
+        if (!path.isAbsolute(filePath)) {
+            filePath = path.join(fileName, "..", filePath);
         }
-    });
+    }
+    console.log(filePath);
+
+    const isB = isBinaryFileSync(filePath);
+    console.log(isB);
+
+    if (!isB) return readFileSync(filePath).toString();
+
+    let mime = await fileTypeFromFile(filePath);
+    if (!mime) return url;
+
+    if (mime.mime === "application/pdf") {
+        let dataBuffer = readFileSync("example.pdf");
+        return (await pdf(dataBuffer)).text;
+    } else if (mime.mime === "application/vnd.openxmlformats-officedocument.wordprocessingml.document") {
+        let dataBuffer = readFileSync("example.docx", "binary");
+        return (await mammoth.extractRawText({ buffer: Buffer.from(dataBuffer) })).value;
+    } else if (mime.mime === "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet") {
+        const workbook = xlsx.readFile("example.xlsx");
+        const sheetNames = workbook.SheetNames;
+        let textL: string[] = [];
+        for (let i of sheetNames) {
+            const data = xlsx.utils.sheet_to_json(workbook.Sheets[sheetNames[0]]);
+            textL.push(i, JSON.stringify(data));
+        }
+        return textL.join("\n");
+    } else return url;
 }
-// todo pdf docx
-function data2text() {}
