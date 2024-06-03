@@ -138,11 +138,16 @@ function ai(m: aim, config: aiconfig) {
                     return v.json();
                 })
                 .then((t) => {
+                    let answer = `错误：${JSON.stringify(t)}`;
                     if (config.type === "chatgpt") {
-                        let answer = t.message?.content || t.choices[0].message.content;
+                        try {
+                            answer = t.message?.content || t.choices[0].message.content;
+                        } catch (error) {}
                         re(answer);
                     } else {
-                        let answer = t.candidates[0].content.parts[0].text;
+                        try {
+                            answer = t.candidates[0].content.parts[0].text;
+                        } catch (error) {}
                         re(answer);
                     }
                 })
