@@ -18,7 +18,6 @@
     "file-type": "^19.0.0",
     "isbinaryfile": "^5.0.2",
     "mammoth": "^1.7.1",
-    "pdf-parse": "^1.1.1",
     "xlsx": "^0.18.5",
     "yaml": "^2.3.4"
   },
