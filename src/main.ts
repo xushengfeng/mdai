@@ -139,7 +139,7 @@ function ai(m: aim, config: aiconfig) {
                 })
                 .then((t) => {
                     if (config.type === "chatgpt") {
-                        let answer = t.choices[0].message.content;
+                        let answer = t.message?.content || t.choices[0].message.content;
                         re(answer);
                     } else {
                         let answer = t.candidates[0].content.parts[0].text;
