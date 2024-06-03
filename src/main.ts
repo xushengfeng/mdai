@@ -301,13 +301,13 @@ async function parseUrl(url: string) {
     if (!mime) return url;
 
     if (mime.mime === "application/pdf") {
-        let dataBuffer = readFileSync("example.pdf");
+        let dataBuffer = readFileSync(filePath);
         return (await pdf(dataBuffer)).text;
     } else if (mime.mime === "application/vnd.openxmlformats-officedocument.wordprocessingml.document") {
-        let dataBuffer = readFileSync("example.docx", "binary");
+        let dataBuffer = readFileSync(filePath, "binary");
         return (await mammoth.extractRawText({ buffer: Buffer.from(dataBuffer) })).value;
     } else if (mime.mime === "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet") {
-        const workbook = xlsx.readFile("example.xlsx");
+        const workbook = xlsx.readFile(filePath);
         const sheetNames = workbook.SheetNames;
         let textL: string[] = [];
         for (let i of sheetNames) {
