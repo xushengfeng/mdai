@@ -4,7 +4,6 @@ import path from "path";
 import YAML from "yaml";
 import { fileTypeFromFile } from "file-type";
 import { isBinaryFileSync } from "isbinaryfile";
-import * as pdf from "pdf-parse";
 import mammoth from "mammoth";
 import * as xlsx from "xlsx";
 
@@ -301,8 +300,6 @@ async function parseUrl(url: string) {
     if (!mime) return url;
 
     if (mime.mime === "application/pdf") {
-        let dataBuffer = readFileSync(filePath);
-        return (await pdf(dataBuffer)).text;
     } else if (mime.mime === "application/vnd.openxmlformats-officedocument.wordprocessingml.document") {
         let dataBuffer = readFileSync(filePath, "binary");
         return (await mammoth.extractRawText({ buffer: Buffer.from(dataBuffer) })).value;
