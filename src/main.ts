@@ -14,7 +14,8 @@ let configPath = path.join(
     "config.json"
 );
 if (existsSync(configPath)) {
-    var _config = JSON.parse(readFileSync(configPath).toString());
+    var _config: { [name: string]: aiconfig } = JSON.parse(readFileSync(configPath).toString());
+    console.log(`config: ${configPath}`);
 }
 let fileName = process.argv[2];
 if (!path.isAbsolute(fileName)) fileName = path.join(process.cwd(), process.argv[2]);
@@ -176,7 +177,7 @@ async function parse(text: string) {
     let isOp = false;
     let op: string[] = [];
     let aiM: aim = [];
-    let aiConfig: aiconfig = _config || { type: "chatgpt" };
+    let aiConfig: aiconfig = Object.values(_config)[0] || { type: "chatgpt" };
     l.push(newMark);
     let ps: { text: string; index: number }[] = l.map((i) => {
         let oi = index;
@@ -202,6 +203,7 @@ async function parse(text: string) {
                     askMark = option["ask"] || askMark;
                     aiAnswer = option["answer"] || aiAnswer;
                     shareSys = Boolean(option["shareSys"]);
+                    aiConfig = _config[option["configName"]];
                     aiConfig = Object.assign(aiConfig, option["config"]);
 
                     break;
