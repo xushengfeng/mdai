@@ -171,7 +171,7 @@ async function parse(text: string) {
     let ignoreMark = "//";
     let userMark = ":>";
     let aiMark = "!>";
-    let askMark = "??";
+    let askMark = "?";
     let aiAnswer = "\n!>\n$&";
     let shareSys = false;
     let isOp = false;
