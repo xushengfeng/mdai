@@ -13,10 +13,11 @@ let configPath = path.join(
     "mdai",
     "config.json"
 );
-if (existsSync(configPath)) {
-    var _config: { [name: string]: aiconfig } = JSON.parse(readFileSync(configPath).toString());
-    console.log(`config: ${configPath}`);
-}
+if (!existsSync(configPath))
+    writeFileSync(configPath, JSON.stringify({ models: { default: { type: "chatgpt", url: "", key: "" } } }, null, 2));
+console.log(`config: ${configPath}`);
+let _config: { models: { [name: string]: aiconfig } } = JSON.parse(readFileSync(configPath).toString());
+
 let fileName = process.argv[2];
 if (!path.isAbsolute(fileName)) fileName = path.join(process.cwd(), process.argv[2]);
 let canWatch = true;
@@ -177,7 +178,7 @@ async function parse(text: string) {
     let isOp = false;
     let op: string[] = [];
     let aiM: aim = [];
-    let aiConfig: aiconfig = Object.values(_config)[0] || { type: "chatgpt" };
+    let aiConfig: aiconfig = Object.values(_config.models)[0] || { type: "chatgpt" };
     l.push(newMark);
     let ps: { text: string; index: number }[] = l.map((i) => {
         let oi = index;
@@ -203,7 +204,7 @@ async function parse(text: string) {
                     askMark = option["ask"] || askMark;
                     aiAnswer = option["answer"] || aiAnswer;
                     shareSys = Boolean(option["shareSys"]);
-                    aiConfig = _config[option["configName"]];
+                    aiConfig = _config.models[option["configName"]];
                     aiConfig = Object.assign(aiConfig, option["config"]);
 
                     break;
