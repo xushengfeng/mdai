@@ -243,15 +243,17 @@ async function parse(text: string) {
             }
         } else {
             if (aiM.length) {
-                const imageRegex = /!\[.*\]\((.*?)\)/g;
-                const linkRegex = /\[.*\]\((.*?)\)/g;
-                const imageMeach = imageRegex.exec(i);
-                const linkMeach = linkRegex.exec(i);
-                if (imageMeach) {
-                    let img = await parseImageUrl(imageMeach[1]);
-                    aiM.at(-1).content["img"] = img;
-                } else if (linkMeach) {
-                    aiM.at(-1).content.text += await parseUrl(linkMeach[1]);
+                if (aiM.at(-1).role === "user") {
+                    const imageRegex = /!\[.*\]\((.*?)\)/g;
+                    const linkRegex = /\[.*\]\((.*?)\)/g;
+                    const imageMeach = imageRegex.exec(i);
+                    const linkMeach = linkRegex.exec(i);
+                    if (imageMeach) {
+                        let img = await parseImageUrl(imageMeach[1]);
+                        aiM.at(-1).content["img"] = img;
+                    } else if (linkMeach) {
+                        aiM.at(-1).content.text += await parseUrl(linkMeach[1]);
+                    }
                 } else {
                     aiM.at(-1).content.text += "\n" + i;
                 }
