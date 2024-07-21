@@ -253,6 +253,8 @@ async function parse(text: string) {
                         aiM.at(-1).content["img"] = img;
                     } else if (linkMeach) {
                         aiM.at(-1).content.text += await parseUrl(linkMeach[1]);
+                    } else {
+                        aiM.at(-1).content.text += "\n" + i;
                     }
                 } else {
                     aiM.at(-1).content.text += "\n" + i;
